@@ -2,7 +2,9 @@ var sjcl    = require('./utils').sjcl;
 var utils   = require('./utils');
 var extend  = require('extend');
 
-var BigInteger = utils.jsbn.BigInteger;
+var BigNumber = require('bignumber.js');
+
+utils.configureBigNumber(BigNumber);
 
 var Base = {};
 
@@ -25,26 +27,25 @@ extend(Base, {
 
 function sha256(bytes) {
   return sjcl.codec.bytes.fromBits(sjcl.hash.sha256.hash(sjcl.codec.bytes.toBits(bytes)));
-};
+}
 
 function sha256hash(bytes) {
   return sha256(sha256(bytes));
-};
+}
 
 // --> input: big-endian array of bytes.
 // <-- string at least as long as input.
 Base.encode = function(input, alpha) {
   var alphabet = alphabets[alpha || 'ripple'];
-  var bi_base  = new BigInteger(String(alphabet.length));
-  var bi_q     = new BigInteger();
-  var bi_r     = new BigInteger();
-  var bi_value = new BigInteger(input);
+  var base  = new BigNumber(String(alphabet.length));
+  var value = new BigNumber(utils.arrayToHex(input), 16);
   var buffer   = [];
 
-  while (bi_value.compareTo(BigInteger.ZERO) > 0) {
-    bi_value.divRemTo(bi_base, bi_q, bi_r);
-    bi_q.copyTo(bi_value);
-    buffer.push(alphabet[bi_r.intValue()]);
+  while (value.greaterThan(0)) {
+    var quotient = value.dividedToIntegerBy(base);
+    var remainder = value.minus(quotient.times(base));
+    value = quotient;
+    buffer.push(alphabet[remainder.toNumber()]);
   }
 
   for (var i=0; i !== input.length && !input[i]; i += 1) {
@@ -62,8 +63,8 @@ Base.decode = function(input, alpha) {
   }
 
   var alphabet = alphabets[alpha || 'ripple'];
-  var bi_base  = new BigInteger(String(alphabet.length));
-  var bi_value = new BigInteger();
+  var base  = new BigNumber(String(alphabet.length));
+  var value = new BigNumber(0);
   var i;
 
   for (i = 0; i !== input.length && input[i] === alphabet[0]; i += 1) {
@@ -76,15 +77,14 @@ Base.decode = function(input, alpha) {
       return void(0);
     }
 
-    var r = new BigInteger();
-    r.fromInt(v);
-    bi_value  = bi_value.multiply(bi_base).add(r);
+    value = value.times(base).plus(v);
   }
 
   // toByteArray:
   // - Returns leading zeros!
   // - Returns signed bytes!
-  var bytes =  bi_value.toByteArray().map(function(b) { return b ? b < 0 ? 256+b : b : 0; });
+  var array = utils.hexToArray(value.toString(16));
+  var bytes =  array.map(function(b) { return b ? b < 0 ? 256+b : b : 0; });
   var extra = 0;
 
   while (extra !== bytes.length && !bytes[extra]) {
@@ -129,7 +129,7 @@ Base.encode_check = function(version, input, alphabet) {
 };
 
 // --> input : String
-// <-- NaN || BigInteger
+// <-- NaN || BigNumber
 Base.decode_check = function(version, input, alphabet) {
   var buffer = Base.decode(input, alphabet);
 
@@ -163,7 +163,7 @@ Base.decode_check = function(version, input, alphabet) {
   // intrepret the value as a negative number
   buffer[0] = 0;
 
-  return new BigInteger(buffer.slice(0, -4), 256);
+  return new BigNumber(utils.arrayToHex(buffer.slice(0, -4)), 16);
 };
 
 exports.Base = Base;

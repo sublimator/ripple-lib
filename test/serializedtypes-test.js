@@ -2,7 +2,7 @@ var assert           = require('assert');
 var SerializedObject = require('ripple-lib').SerializedObject;
 var types            = require('ripple-lib').types;
 var Amount           = require('ripple-lib').Amount;
-var BigInteger       = require('ripple-lib').jsbn.BigInteger;
+var BigNumber        = require('bignumber.js');
 
 describe('Serialized types', function() {
   describe('Int8', function() {
@@ -299,15 +299,15 @@ describe('Serialized types', function() {
       types.Int64.serialize(so, 'F0E1D2C3B4A59687');
       assert.strictEqual(so.to_hex(), 'F0E1D2C3B4A59687');
     });
-    it('Serialize BigInteger("FFEEDDCCBBAA9988")', function () {
+    it('Serialize BigNumber("FFEEDDCCBBAA9988")', function () {
       var so = new SerializedObject();
-      types.Int64.serialize(so, new BigInteger('FFEEDDCCBBAA9988', 16));
+      types.Int64.serialize(so, new BigNumber('FFEEDDCCBBAA9988', 16));
       assert.strictEqual(so.to_hex(), 'FFEEDDCCBBAA9988');
     });
-    it('Fail to serialize BigInteger("-1")', function () {
+    it('Fail to serialize BigNumber("-1")', function () {
       var so = new SerializedObject();
       assert.throws(function () {
-        types.Int64.serialize(so, new BigInteger('-1', 10));
+        types.Int64.serialize(so, new BigNumber('-1', 10));
       });
     });
     it('Fail to serialize "10000000000000000"', function () {

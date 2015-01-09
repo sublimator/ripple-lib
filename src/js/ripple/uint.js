@@ -2,7 +2,7 @@ var utils   = require('./utils');
 var sjcl    = utils.sjcl;
 var config  = require('./config');
 
-var BigInteger = utils.jsbn.BigInteger;
+var BigNumber = require('bignumber.js');
 
 //
 // Abstract UInt class
@@ -11,7 +11,7 @@ var BigInteger = utils.jsbn.BigInteger;
 //
 
 var UInt = function() {
-  // Internal form: NaN or BigInteger
+  // Internal form: NaN or BigNumber
   this._value  = NaN;
   this._update();
 };
@@ -107,17 +107,15 @@ UInt.prototype.copyTo = function(d) {
 };
 
 UInt.prototype.equals = function(d) {
-  return this._value instanceof BigInteger
-  && d._value instanceof BigInteger
-  && this._value.equals(d._value);
+  return this.is_valid() && d.is_valid() && this._value.equals(d._value);
 };
 
 UInt.prototype.is_valid = function() {
-  return this._value instanceof BigInteger;
+  return this._value instanceof BigNumber;
 };
 
 UInt.prototype.is_zero = function() {
-  return this._value.equals(BigInteger.ZERO);
+  return this._value.isZero();
 };
 
 /**
@@ -147,24 +145,25 @@ UInt.prototype.parse_generic = function(j) {
       case this.constructor.STR_ZERO:
       case this.constructor.ACCOUNT_ZERO:
       case this.constructor.HEX_ZERO:
-      this._value  = BigInteger.valueOf();
+      this._value  = new BigNumber(0);
       break;
 
     case '1':
       case this.constructor.STR_ONE:
       case this.constructor.ACCOUNT_ONE:
       case this.constructor.HEX_ONE:
-      this._value  = new BigInteger([1]);
+      this._value  = new BigNumber(1);
       break;
 
     default:
         if (typeof j !== 'string') {
           this._value  = NaN;
         } else if (this.constructor.width === j.length) {
-          this._value  = new BigInteger(utils.stringToArray(j), 256);
+          var hex = utils.arrayToHex(utils.stringToArray(j));
+          this._value  = new BigNumber(hex, 16);
         } else if ((this.constructor.width * 2) === j.length) {
           // XXX Check char set!
-          this._value  = new BigInteger(j, 16);
+          this._value  = new BigNumber(j, 16);
         } else {
           this._value  = NaN;
         }
@@ -177,7 +176,7 @@ UInt.prototype.parse_generic = function(j) {
 
 UInt.prototype.parse_hex = function(j) {
   if (typeof j === 'string' && j.length === (this.constructor.width * 2)) {
-    this._value = new BigInteger(j, 16);
+    this._value = new BigNumber(j, 16);
   } else {
     this._value = NaN;
   }
@@ -205,7 +204,7 @@ UInt.prototype.parse_bytes = function(j) {
   if (!Array.isArray(j) || j.length !== this.constructor.width) {
     this._value = NaN;
   } else {
-    this._value  = new BigInteger([0].concat(j), 256);
+    this._value  = new BigNumber(utils.arrayToHex(j), 16);
   }
 
   this._update();
@@ -219,7 +218,7 @@ UInt.prototype.parse_json = UInt.prototype.parse_hex;
 UInt.prototype.parse_bn = function(j) {
   if ((j instanceof sjcl.bn) && j.bitLength() <= this.constructor.width * 8) {
     var bytes = sjcl.codec.bytes.fromBits(j.toBits());
-    this._value  = new BigInteger(bytes, 256);
+    this._value  = new BigNumber(utils.arrayToHex(bytes), 16);
   } else {
     this._value = NaN;
   }
@@ -233,7 +232,7 @@ UInt.prototype.parse_number = function(j) {
   this._value = NaN;
 
   if (typeof j === 'number' && isFinite(j) && j >= 0) {
-    this._value = new BigInteger(String(j));
+    this._value = new BigNumber(String(j));
   }
 
   this._update();
@@ -243,11 +242,12 @@ UInt.prototype.parse_number = function(j) {
 
 // Convert from internal form.
 UInt.prototype.to_bytes = function() {
-  if (!(this._value instanceof BigInteger)) {
+  if (!this.is_valid()) {
     return null;
   }
 
-  var bytes  = this._value.toByteArray();
+  var hex = this._value.toString(16);
+  var bytes = utils.hexToArray(hex);
 
   bytes = bytes.map(function(b) {
     return (b + 256) % 256;
@@ -266,7 +266,7 @@ UInt.prototype.to_bytes = function() {
 };
 
 UInt.prototype.to_hex = function() {
-  if (!(this._value instanceof BigInteger)) {
+  if (!this.is_valid()) {
     return null;
   }
 
@@ -277,7 +277,7 @@ UInt.prototype.to_hex = function() {
 UInt.prototype.to_json = UInt.prototype.to_hex;
 
 UInt.prototype.to_bits = function() {
-  if (!(this._value instanceof BigInteger)) {
+  if (!this.is_valid()) {
     return null;
   }
 
@@ -287,7 +287,7 @@ UInt.prototype.to_bits = function() {
 };
 
 UInt.prototype.to_bn = function() {
-  if (!(this._value instanceof BigInteger)) {
+  if (!this.is_valid()) {
     return null;
   }
 

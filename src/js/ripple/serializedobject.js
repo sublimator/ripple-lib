@@ -7,7 +7,7 @@ var Crypt     = require('./crypt').Crypt;
 var utils     = require('./utils');
 
 var sjcl = utils.sjcl;
-var BigInteger = utils.jsbn.BigInteger;
+var BigNumber = require('bignumber.js');
 
 var TRANSACTION_TYPES = { };
 
@@ -209,7 +209,7 @@ SerializedObject.jsonify_structure = function(structure, field_name) {
 
       if (typeof structure.to_json === 'function') {
         output = structure.to_json();
-      } else if (structure instanceof BigInteger) {
+      } else if (structure instanceof BigNumber) {
         output = structure.toString(16).toUpperCase();
       } else {
         //new Array or Object
