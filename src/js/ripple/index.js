@@ -25,6 +25,8 @@ exports.TransactionQueue = require('./transactionqueue').TransactionQueue;
 exports.VaultClient      = require('./vaultclient').VaultClient;
 exports.Blob             = require('./blob').Blob;
 
+exports.rangeset         = require('./rangeset');
+
 // Important: We do not guarantee any specific version of SJCL or for any
 // specific features to be included. The version and configuration may change at
 // any time without warning.
