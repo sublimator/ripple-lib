@@ -50,7 +50,11 @@ function isBigNumber(val) {
 }
 
 function serializeHex(so, hexData, noLength) {
-  var byteData = bytes.fromBits(hex.toBits(hexData));
+  serializeBits(so, hex.toBits(hexData), noLength);
+}
+
+function serializeBits(so, bits, noLength) {
+  var byteData = bytes.fromBits(bits);
   if (!noLength) {
     SerializedType.serialize_varint(so, byteData.length);
   }
@@ -126,7 +130,7 @@ function convertIntegerToByteArray(val, bytes) {
   }
 
   if (val < 0 || val >= Math.pow(256, bytes)) {
-    throw new Error('Value out of bounds');
+    throw new Error('Value out of bounds ');
   }
 
   var newBytes = [ ];
@@ -197,12 +201,12 @@ var STInt64 = exports.Int64 = new SerializedType({
       if (val < 0) {
         throw new Error('Negative value for unsigned Int64 is invalid.');
       }
-      bigNumObject = new BigNumber(String(val), 10);
+      bigNumObject = new sjcl.bn(val, 10);
     } else if (isString(val)) {
       if (!isHexInt64String(val)) {
         throw new Error('Not a valid hex Int64.');
       }
-      bigNumObject = new BigNumber(val, 16);
+      bigNumObject = new sjcl.bn(val, 16);
     } else if (isBigNumber(val)) {
       if (val.isNegative()) {
         throw new Error('Negative value for unsigned Int64 is invalid.');
@@ -211,18 +215,7 @@ var STInt64 = exports.Int64 = new SerializedType({
     } else {
       throw new Error('Invalid type for Int64');
     }
-
-    var hex = bigNumObject.toString(16);
-
-    if (hex.length > 16) {
-      throw new Error('Int64 is too large');
-    }
-
-    while (hex.length < 16) {
-      hex = '0' + hex;
-    }
-
-    serializeHex(so, hex, true); //noLength = true
+    serializeBits(so, bigNumObject.toBits(64), true); //noLength = true
   },
   parse: function (so) {
     var bytes = so.read(8);
@@ -243,7 +236,7 @@ var STHash128 = exports.Hash128 = new SerializedType({
     if (!hash.is_valid()) {
       throw new Error('Invalid Hash128');
     }
-    serializeHex(so, hash.to_hex(), true); //noLength = true
+    serializeBits(so, hash.to_bits(), true); //noLength = true
   },
   parse: function (so) {
     return UInt128.from_bytes(so.read(16));
@@ -258,7 +251,7 @@ var STHash256 = exports.Hash256 = new SerializedType({
     if (!hash.is_valid()) {
       throw new Error('Invalid Hash256');
     }
-    serializeHex(so, hash.to_hex(), true); //noLength = true
+    serializeBits(so, hash.to_bits(), true); //noLength = true
   },
   parse: function (so) {
     return UInt256.from_bytes(so.read(32));
@@ -273,7 +266,7 @@ var STHash160 = exports.Hash160 = new SerializedType({
     if (!hash.is_valid()) {
       throw new Error('Invalid Hash160');
     }
-    serializeHex(so, hash.to_hex(), true); //noLength = true
+    serializeBits(so, hash.to_bits(), true); //noLength = true
   },
   parse: function (so) {
     return UInt160.from_bytes(so.read(20));
@@ -446,7 +439,7 @@ var STAccount = exports.Account = new SerializedType({
     if (!account.is_valid()) {
       throw new Error('Invalid account!');
     }
-    serializeHex(so, account.to_hex());
+    serializeBits(so, account.to_bits());
   },
   parse: function (so) {
     var len = this.parse_varint(so);
@@ -499,7 +492,7 @@ var STPathSet = exports.PathSet = new SerializedType({
         STInt8.serialize(so, type);
 
         if (entry.account) {
-          so.append(UInt160.from_json(entry.account).to_bytes());
+          STHash160.serialize(so, entry.account);
         }
 
         if (entry.currency) {
@@ -508,7 +501,7 @@ var STPathSet = exports.PathSet = new SerializedType({
         }
 
         if (entry.issuer) {
-          so.append(UInt160.from_json(entry.issuer).to_bytes());
+          STHash160.serialize(so, entry.issuer);
         }
       }
     }
