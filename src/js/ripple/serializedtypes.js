@@ -212,6 +212,7 @@ var STInt64 = exports.Int64 = new SerializedType({
         throw new Error('Negative value for unsigned Int64 is invalid.');
       }
       bigNumObject = val;
+      // TODO ^^^^^
     } else {
       throw new Error('Invalid type for Int64');
     }
