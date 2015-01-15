@@ -2,8 +2,6 @@ var utils   = require('./utils');
 var sjcl    = utils.sjcl;
 var config  = require('./config');
 
-var BigNumber = require('bignumber.js');
-
 //
 // Abstract UInt class
 //
@@ -11,7 +9,7 @@ var BigNumber = require('bignumber.js');
 //
 
 var UInt = function() {
-  // Internal form: NaN or BigNumber
+  // Internal form: NaN or sjcl.bn
   this._value  = NaN;
   this._update();
 };
@@ -111,11 +109,12 @@ UInt.prototype.equals = function(d) {
 };
 
 UInt.prototype.is_valid = function() {
-  return this._value instanceof BigNumber;
+  return this._value instanceof sjcl.bn;
 };
 
 UInt.prototype.is_zero = function() {
-  return this._value.isZero();
+  var val = this._value;
+  return val.limbs.length == 1 && val.limbs[0] == 0;
 };
 
 /**
@@ -145,14 +144,14 @@ UInt.prototype.parse_generic = function(j) {
       case this.constructor.STR_ZERO:
       case this.constructor.ACCOUNT_ZERO:
       case this.constructor.HEX_ZERO:
-      this._value  = new BigNumber(0);
+      this._value  = new sjcl.bn(0);
       break;
 
     case '1':
       case this.constructor.STR_ONE:
       case this.constructor.ACCOUNT_ONE:
       case this.constructor.HEX_ONE:
-      this._value  = new BigNumber(1);
+      this._value  = new sjcl.bn(1);
       break;
 
     default:
@@ -160,10 +159,10 @@ UInt.prototype.parse_generic = function(j) {
           this._value  = NaN;
         } else if (this.constructor.width === j.length) {
           var hex = utils.arrayToHex(utils.stringToArray(j));
-          this._value  = new BigNumber(hex, 16);
+          this._value  = new sjcl.bn(hex, 16);
         } else if ((this.constructor.width * 2) === j.length) {
           // XXX Check char set!
-          this._value  = new BigNumber(j, 16);
+          this._value  = new sjcl.bn(j, 16);
         } else {
           this._value  = NaN;
         }
@@ -176,7 +175,7 @@ UInt.prototype.parse_generic = function(j) {
 
 UInt.prototype.parse_hex = function(j) {
   if (typeof j === 'string' && j.length === (this.constructor.width * 2)) {
-    this._value = new BigNumber(j, 16);
+    this._value = new sjcl.bn(j, 16);
   } else {
     this._value = NaN;
   }
@@ -190,8 +189,9 @@ UInt.prototype.parse_bits = function(j) {
   if (sjcl.bitArray.bitLength(j) !== this.constructor.width * 8) {
     this._value = NaN;
   } else {
-    var bytes = sjcl.codec.bytes.fromBits(j);
-    this.parse_bytes(bytes);
+    this._value = sjcl.bn.fromBits(j);
+    // var bytes = sjcl.codec.bytes.fromBits(j);
+    // this.parse_bytes(bytes);
   }
 
   this._update();
@@ -204,7 +204,8 @@ UInt.prototype.parse_bytes = function(j) {
   if (!Array.isArray(j) || j.length !== this.constructor.width) {
     this._value = NaN;
   } else {
-    this._value  = new BigNumber(utils.arrayToHex(j), 16);
+    var bits = sjcl.codec.bytes.toBits(j);
+    this._value  = sjcl.bn.fromBits(bits);
   }
 
   this._update();
@@ -217,8 +218,9 @@ UInt.prototype.parse_json = UInt.prototype.parse_hex;
 
 UInt.prototype.parse_bn = function(j) {
   if ((j instanceof sjcl.bn) && j.bitLength() <= this.constructor.width * 8) {
-    var bytes = sjcl.codec.bytes.fromBits(j.toBits());
-    this._value  = new BigNumber(utils.arrayToHex(bytes), 16);
+    // var bytes = sjcl.codec.bytes.fromBits(j.toBits());
+    // this._value  = new sjcl.bn(utils.arrayToHex(bytes), 16);
+    this._value = new sjcl.bn(j);
   } else {
     this._value = NaN;
   }
@@ -232,7 +234,7 @@ UInt.prototype.parse_number = function(j) {
   this._value = NaN;
 
   if (typeof j === 'number' && isFinite(j) && j >= 0) {
-    this._value = new BigNumber(String(j));
+    this._value = new sjcl.bn(j);
   }
 
   this._update();
@@ -245,33 +247,14 @@ UInt.prototype.to_bytes = function() {
   if (!this.is_valid()) {
     return null;
   }
-
-  var hex = this._value.toString(16);
-  var bytes = utils.hexToArray(hex);
-
-  bytes = bytes.map(function(b) {
-    return (b + 256) % 256;
-  });
-
-  var target = this.constructor.width;
-
-  // XXX Make sure only trim off leading zeros.
-  bytes = bytes.slice(-target);
-
-  while (bytes.length < target) {
-    bytes.unshift(0);
-  }
-
-  return bytes;
+  return sjcl.codec.bytes.fromBits(this.to_bits());
 };
 
 UInt.prototype.to_hex = function() {
   if (!this.is_valid()) {
     return null;
   }
-
-  var bytes = this.to_bytes();
-  return sjcl.codec.hex.fromBits(sjcl.codec.bytes.toBits(bytes)).toUpperCase();
+  return sjcl.codec.hex.fromBits(this.to_bits()).toUpperCase();
 };
 
 UInt.prototype.to_json = UInt.prototype.to_hex;
@@ -281,9 +264,7 @@ UInt.prototype.to_bits = function() {
     return null;
   }
 
-  var bytes = this.to_bytes();
-
-  return sjcl.codec.bytes.toBits(bytes);
+  return this._value.toBits(this.constructor.width * 8);
 };
 
 UInt.prototype.to_bn = function() {
