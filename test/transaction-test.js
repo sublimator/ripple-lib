@@ -345,7 +345,7 @@ describe('Transaction', function() {
     const dst = 'rGihwhaqU8g7ahwAvTq6iX5rvsfcbgZw6v';
 
     transaction.payment(src, dst, '100');
-    remote.set_secret(src, 'masterpassphrase');
+    remote.setSecret(src, 'masterpassphrase');
 
     assert(transaction.complete());
     const json = transaction.serialize().to_json();
@@ -454,7 +454,6 @@ describe('Transaction', function() {
     transaction.SigningPubKey = undefined;
     transaction.tx_json.Account = 'rMWwx3Ma16HnqSd4H6saPisihX9aKpXxHJ';
     transaction._secret = 'sh2pTicynUEG46jjR4EoexHcQEoijX';
-
     transaction.once('error', function(err) {
       assert.strictEqual(err.result, 'tejSecretInvalid');
       done();
@@ -553,6 +552,36 @@ describe('Transaction', function() {
     done();
   });
 
+  describe('ed25519 signing', function() {
+    it('can accept an ed25519 seed for ._secret', function() {
+      const expectedPub = 'EDD3993CDC6647896C455F136648B7750' +
+                          '723B011475547AF60691AA3D7438E021D';
+
+      const expectedSig = 'C3646313B08EED6AF4392261A31B961F' +
+                          '10C66CB733DB7F6CD9EAB079857834C8' +
+                          'B0334270A2C037E63CDCCC1932E08328' +
+                          '82B7B7066ECD2FAEDEB4A83DF8AE6303';
+
+      const tx_json = {
+        Account: 'rJZdUusLDtY9NEsGea7ijqhVrXv98rYBYN',
+        Amount: '1000',
+        Destination: 'rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh',
+        Fee: '10',
+        Flags: 2147483648,
+        Sequence: 1,
+        TransactionType: 'Payment'
+      };
+
+      const tx = Transaction.from_json(tx_json);
+      tx.setSecret('sEd7rBGm5kxzauRTAV2hbsNz7N45X91');
+      tx.complete();
+      tx.sign();
+
+      assert.strictEqual(tx_json.SigningPubKey, expectedPub);
+      assert.strictEqual(tx_json.TxnSignature, expectedSig);
+    });
+  });
+
   describe('signing', function() {
     const tx_json = {
       SigningPubKey: '021FED5FD081CE5C4356431267D04C6E2167E4112C897D5E10335D4E22B4DA49ED',
@@ -649,26 +678,26 @@ describe('Transaction', function() {
       Paths: [
         [
           {
-        account: 'rMwjYedjc7qqtKYVLiAccJSmCwih4LnE2q',
-        currency: 'USD',
-        issuer: 'rMwjYedjc7qqtKYVLiAccJSmCwih4LnE2q',
-        type: 49,
-        type_hex: '0000000000000031'
-      },
-      {
-        currency: 'LTC',
-        issuer: 'rfYv1TXnwgDDK4WQNbFALykYuEBnrR4pDX',
-        type: 48,
-        type_hex: '0000000000000030'
-      },
-      {
-        account: 'rfYv1TXnwgDDK4WQNbFALykYuEBnrR4pDX',
-        currency: 'LTC',
-        issuer: 'rfYv1TXnwgDDK4WQNbFALykYuEBnrR4pDX',
-        type: 49,
-        type_hex: '0000000000000031'
-      }
-      ]
+            account: 'rMwjYedjc7qqtKYVLiAccJSmCwih4LnE2q',
+            currency: 'USD',
+            issuer: 'rMwjYedjc7qqtKYVLiAccJSmCwih4LnE2q',
+            type: 49,
+            type_hex: '0000000000000031'
+          },
+          {
+            currency: 'LTC',
+            issuer: 'rfYv1TXnwgDDK4WQNbFALykYuEBnrR4pDX',
+            type: 48,
+            type_hex: '0000000000000030'
+          },
+          {
+            account: 'rfYv1TXnwgDDK4WQNbFALykYuEBnrR4pDX',
+            currency: 'LTC',
+            issuer: 'rfYv1TXnwgDDK4WQNbFALykYuEBnrR4pDX',
+            type: 49,
+            type_hex: '0000000000000031'
+          }
+        ]
       ],
       SendMax: {
         currency: 'USD',
@@ -778,26 +807,26 @@ describe('Transaction', function() {
       Paths: [
         [
           {
-        account: 'rMwjYedjc7qqtKYVLiAccJSmCwih4LnE2q',
-        currency: 'USD',
-        issuer: 'rMwjYedjc7qqtKYVLiAccJSmCwih4LnE2q',
-        type: 49,
-        type_hex: '0000000000000031'
-      },
-      {
-        currency: 'LTC',
-        issuer: 'rfYv1TXnwgDDK4WQNbFALykYuEBnrR4pDX',
-        type: 48,
-        type_hex: '0000000000000030'
-      },
-      {
-        account: 'rfYv1TXnwgDDK4WQNbFALykYuEBnrR4pDX',
-        currency: 'LTC',
-        issuer: 'rfYv1TXnwgDDK4WQNbFALykYuEBnrR4pDX',
-        type: 49,
-        type_hex: '0000000000000031'
-      }
-      ]
+            account: 'rMwjYedjc7qqtKYVLiAccJSmCwih4LnE2q',
+            currency: 'USD',
+            issuer: 'rMwjYedjc7qqtKYVLiAccJSmCwih4LnE2q',
+            type: 49,
+            type_hex: '0000000000000031'
+          },
+          {
+            currency: 'LTC',
+            issuer: 'rfYv1TXnwgDDK4WQNbFALykYuEBnrR4pDX',
+            type: 48,
+            type_hex: '0000000000000030'
+          },
+          {
+            account: 'rfYv1TXnwgDDK4WQNbFALykYuEBnrR4pDX',
+            currency: 'LTC',
+            issuer: 'rfYv1TXnwgDDK4WQNbFALykYuEBnrR4pDX',
+            type: 49,
+            type_hex: '0000000000000031'
+          }
+        ]
       ],
       SendMax: {
         currency: 'USD',
@@ -1136,17 +1165,17 @@ describe('Transaction', function() {
 
     const paths = [
       [{
-      account: 'rP51ycDJw5ZhgvdKiRjBYZKYjsyoCcHmnY',
-      issuer: 'rsLEU1TPdCJPPysqhWYw9jD97xtG5WqSJm',
-      test: 1,
-      currency: 'USD'
-    }],
-    [{
-      account: 'rP51ycDJw5ZhgvdKiRjBYZKYjsyoCcHmnY',
-      issuer: 'rsLEU1TPdCJPPysqhWYw9jD97xtG5WqSJm',
-      test: 2,
-      currency: 'USD'
-    }]
+        account: 'rP51ycDJw5ZhgvdKiRjBYZKYjsyoCcHmnY',
+        issuer: 'rsLEU1TPdCJPPysqhWYw9jD97xtG5WqSJm',
+        test: 1,
+        currency: 'USD'
+      }],
+      [{
+        account: 'rP51ycDJw5ZhgvdKiRjBYZKYjsyoCcHmnY',
+        issuer: 'rsLEU1TPdCJPPysqhWYw9jD97xtG5WqSJm',
+        test: 2,
+        currency: 'USD'
+      }]
     ];
 
 //     assert.throws(function() {
@@ -1182,6 +1211,27 @@ describe('Transaction', function() {
         currency: 'USD'
       }]
     ]);
+  });
+
+  it('Does not add empty transaction paths', function() {
+    const transaction = new Transaction();
+
+    const paths = [];
+
+    assert.strictEqual(transaction.tx_json.Paths, undefined);
+
+    transaction.setType('Payment');
+
+    assert.throws(function() {
+      transaction.paths(1);
+    }, /Error: Paths must be an array/);
+    assert.throws(function() {
+      transaction.setPaths(1);
+    }, /Error: Paths must be an array/);
+
+    transaction.setPaths(paths);
+
+    assert.strictEqual(transaction.tx_json.Paths, undefined);
   });
 
   it('Set secret', function() {
@@ -1297,11 +1347,11 @@ describe('Transaction', function() {
     const expected = [
       {
         Memo:
-        {
-          MemoType: '6D657373616765',
-          MemoFormat: '6A736F6E',
-          MemoData: '7B22737472696E67223A2276616C7565222C22626F6F6C223A747275652C22696E7465676572223A317D'
-        }
+          {
+            MemoType: '6D657373616765',
+            MemoFormat: '6A736F6E',
+            MemoData: '7B22737472696E67223A2276616C7565222C22626F6F6C223A747275652C22696E7465676572223A317D'
+          }
       }
     ];
 
@@ -1993,7 +2043,7 @@ describe('Transaction', function() {
     const queue = new TransactionQueue();
 
     // Randomized submit indexes
-    [
+    const indexes = [
       28093,
       456944,
       347213,
@@ -2004,8 +2054,9 @@ describe('Transaction', function() {
       925550,
       872298,
       543305
-    ]
-    .forEach(function(index) {
+    ];
+
+    indexes.forEach(function(index) {
       const tx = new Transaction();
       tx.initialSubmitIndex = index;
       queue.push(tx);

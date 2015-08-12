@@ -1,3 +1,10 @@
+##0.13.0
+
++ Added experimental version of RippleAPI
+    - [RippleAPI README and samples](https://github.com/ripple/ripple-lib/tree/develop/docs/samples)
+    - [Method documentation](https://rawgit.com/ripple/ripple-lib/develop/docs/api.html)
++ [Fix bug where the paths would be set with an empty array](https://github.com/ripple/ripple-lib/commit/83874ec0962da311b76f2385623e51c68bc39035)
+
 ##0.12.6
 
 + [Fix webpack require failure due to "./" notation](https://github.com/ripple/ripple-lib/commit/8d9746d7b10be203ee613df523c2522012ff1baf)

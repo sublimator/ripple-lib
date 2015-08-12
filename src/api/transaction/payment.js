@@ -7,7 +7,7 @@ const toRippledAmount = utils.common.toRippledAmount;
 const Transaction = utils.common.core.Transaction;
 
 function isXRPToXRPPayment(payment) {
-  const sourceCurrency = _.get(payment, 'source.amount.currency');
+  const sourceCurrency = _.get(payment, 'source.maxAmount.currency');
   const destinationCurrency = _.get(payment, 'destination.amount.currency');
   return sourceCurrency === 'XRP' && destinationCurrency === 'XRP';
 }
@@ -23,8 +23,8 @@ function applyAnyCounterpartyEncoding(payment) {
   // https://ripple.com/build/transactions/
   //    #special-issuer-values-for-sendmax-and-amount
   // https://ripple.com/build/ripple-rest/#counterparties-in-payments
-  if (isIOUWithoutCounterparty(payment.source.amount)) {
-    payment.source.amount.counterparty = payment.source.address;
+  if (isIOUWithoutCounterparty(payment.source.maxAmount)) {
+    payment.source.maxAmount.counterparty = payment.source.address;
   }
   if (isIOUWithoutCounterparty(payment.destination.amount)) {
     payment.destination.amount.counterparty = payment.destination.address;
@@ -71,7 +71,7 @@ function createPaymentTransaction(account, payment) {
     // temREDUNDANT_SEND_MAX removed in:
     // https://github.com/ripple/rippled/commit/
     //  c522ffa6db2648f1d8a987843e7feabf1a0b7de8/
-    transaction.sendMax(toRippledAmount(payment.source.amount));
+    transaction.sendMax(toRippledAmount(payment.source.maxAmount));
 
     if (payment.paths) {
       transaction.paths(JSON.parse(payment.paths));
@@ -81,9 +81,14 @@ function createPaymentTransaction(account, payment) {
   return transaction;
 }
 
-function preparePayment(account, payment, instructions, callback) {
+function preparePaymentAsync(account, payment, instructions, callback) {
   const transaction = createPaymentTransaction(account, payment);
   utils.createTxJSON(transaction, this.remote, instructions, callback);
 }
 
-module.exports = utils.wrapCatch(preparePayment);
+function preparePayment(account: string, payment: Object, instructions={}) {
+  return utils.promisify(preparePaymentAsync.bind(this))(
+    account, payment, instructions);
+}
+
+module.exports = preparePayment;

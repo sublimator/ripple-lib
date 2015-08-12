@@ -12,12 +12,18 @@ lint() {
   REPO_URL="https://raw.githubusercontent.com/ripple/javascript-style-guide"
   curl "$REPO_URL/es6/eslintrc" > ./eslintrc
   echo "plugins: [flowtype]" >> ./eslintrc
-  node_modules/.bin/eslint --reset -c ./eslintrc $(git --no-pager diff --name-only -M100% --diff-filter=AM --relative $(git merge-base FETCH_HEAD origin/HEAD) FETCH_HEAD | grep "\.js$")
+  node_modules/.bin/eslint -c ./eslintrc $(git --no-pager diff --name-only -M100% --diff-filter=AM --relative $(git merge-base FETCH_HEAD origin/HEAD) FETCH_HEAD | grep "\.js$")
 }
 
 unittest() {
+  # test "src"
   npm test --coverage
   npm run coveralls
+
+  # test compiled version in "dist/npm"
+  ln -nfs ../../dist/npm/core test/node_modules/ripple-lib
+  ln -nfs ../../dist/npm test/node_modules/ripple-api
+  npm test
 }
 
 oneNode() {

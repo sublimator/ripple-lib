@@ -1,10 +1,10 @@
 {
   "$schema": "http://json-schema.org/draft-04/schema#",
-  "title": "adjustment",
+  "title": "maxAdjustment",
   "type": "object",
   "properties": {
     "address": {"$ref": "address"},
-    "amount": {
+    "maxAmount": {
       "type": "object",
       "properties": {
         "currency": {"$ref": "currency"},
@@ -19,6 +19,6 @@
       "$ref": "uint32"
     }
   },
-  "required": ["address", "amount"],
+  "required": ["address", "maxAmount"],
   "additionalProperties": false
 }

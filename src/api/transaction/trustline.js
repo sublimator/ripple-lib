@@ -12,7 +12,8 @@ const TrustSetFlags = {
 };
 
 function convertQuality(quality) {
-  return (new BigNumber(quality)).shift(9).truncated().toNumber();
+  return quality === undefined ? undefined :
+    (new BigNumber(quality)).shift(9).truncated().toNumber();
 }
 
 function createTrustlineTransaction(account, trustline) {
@@ -32,9 +33,14 @@ function createTrustlineTransaction(account, trustline) {
   return transaction;
 }
 
-function prepareTrustline(account, trustline, instructions, callback) {
+function prepareTrustlineAsync(account, trustline, instructions, callback) {
   const transaction = createTrustlineTransaction(account, trustline);
   utils.createTxJSON(transaction, this.remote, instructions, callback);
 }
 
-module.exports = utils.wrapCatch(prepareTrustline);
+function prepareTrustline(account: string, trustline: Object, instructions={}) {
+  return utils.promisify(prepareTrustlineAsync.bind(this))(
+    account, trustline, instructions);
+}
+
+module.exports = prepareTrustline;
