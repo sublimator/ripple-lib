@@ -17,6 +17,7 @@
   },
   "dependencies": {
     "@types/lodash": "^4.14.85",
+    "@types/mocha": "^2.2.48",
     "@types/ws": "^3.2.0",
     "bignumber.js": "^4.1.0",
     "https-proxy-agent": "^1.0.0",
@@ -30,7 +31,7 @@
     "ws": "^3.3.1"
   },
   "devDependencies": {
-    "@types/node": "^8.0.53",
+    "@types/node": "^8.9.5",
     "assert-diff": "^1.0.1",
     "coveralls": "^2.13.1",
     "doctoc": "^0.15.0",
@@ -66,7 +67,7 @@
     "compile": "mkdir -p dist/npm/common && cp -r src/common/schemas dist/npm/common/ && tsc",
     "watch": "tsc -w",
     "prepublish": "npm run clean && npm run compile && npm run build",
-    "test": "nyc mocha",
+    "test": "TS_NODE_PROJECT=test nyc mocha",
     "coveralls": "cat ./coverage/lcov.info | coveralls",
     "lint": "tslint -p ./",
     "perf": "./scripts/perf_test.sh",
